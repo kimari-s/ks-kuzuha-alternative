@@ -1,0 +1,105 @@
+# ks-kuzuha-alternative — PHP min bundle manifest.
+#
+# dist/build.py reads this file: it fetches each component at the pinned
+# commit, builds the UI with [ui], copies [[files]] into the bundle and
+# writes build/<name>-<version>.zip (+ .sha256).
+#
+# Component URLs are the public repositories. While they are private, build
+# locally with --src <component>=<local clone> (see README / Makefile).
+
+[bundle]
+name = "ks-kuzuha-alternative"
+version = "0.1.0-alpha.1"
+# Top folder inside the zip. {name} and {version} are substituted.
+top = "{name}-{version}"
+
+# Shown in the UI footer ("<name> v<version>", linking to url): injected as
+# "release" into the runtime config ([ui].site_config). {name} and
+# {version} are substituted.
+[bundle.release]
+name = "kimari-s/{name}"
+url = "https://github.com/kimari-s/{name}"
+
+[components.ks-sw-api]
+url = "https://github.com/kimari-s/ks-sw-api.git"
+commit = "35fe6b92f39e146f6cfb7d8bf8a1d739da47e364"  # v0.2.0-alpha.1 (kssw 1, ks-sw-spec d1af5a8 = v0.1.0-alpha.1)
+
+[components.ks-kuzuha-ui]
+url = "https://github.com/kimari-s/ks-kuzuha-ui.git"
+commit = "11ba939b8b561730fd1452d6fb92a04e614b466d"  # v0.5.0-alpha.1
+
+# The UI build: run in the ks-kuzuha-ui checkout. `config` is a path in this
+# repo, passed as KUZUHA_CONFIG (apiBaseUrl "./api": same origin, no CORS).
+# It is neutral: every variant (the plain zip, the demo) ships the same UI
+# build. Every other KUZUHA_* / VITE_* variable is removed from the
+# environment so the build depends only on this manifest.
+#
+# `site_config` is the runtime config the UI reads at load (board name,
+# colours, tags; operator-editable by FTP), written to `site_config_to`
+# with "release" added. build.py --site-config replaces it (the demo).
+[ui]
+component = "ks-kuzuha-ui"
+install = ["npm", "ci", "--no-audit", "--no-fund"]
+build = ["npm", "run", "build"]
+output = "dist"
+config = "config/bundle.json"
+site_config = "config/site.json"
+site_config_to = "bbs/config.json"
+
+# What goes where. `from` is "<component>:<path>" or "self:<path>" (this
+# repo); a path ending in "/" copies a directory tree. `to` is relative to
+# the top folder. Files matching `exclude` (fnmatch on the path relative to
+# `from`, and on each path segment) are left out. A pattern starting with
+# "/" is anchored to `from` (e.g. "/config.php" spares lib/config.php).
+# `executable = true` ships the file as 0755 (else 0644).
+[[files]]
+from = "ks-kuzuha-ui:dist/"
+to = "bbs/"
+
+[[files]]
+from = "ks-sw-api:php/api/"
+to = "bbs/api/"
+exclude = ["/config.php", "/data", "*.sqlite3", "*.sqlite3-*"]
+
+# Optional: the kssw discovery document (/.well-known/kssw) for the host's
+# document root, outside bbs/ (README-ja.txt says how to place it). Its
+# base "/bbs/api" fits bbs/ uploaded to the document root.
+[[files]]
+from = "ks-sw-api:php/well-known/"
+to = "well-known/"
+exclude = ["README.md"]
+
+# The admin CLI: runs on the operator's machine, so it sits outside the
+# upload folder bbs/.
+[[files]]
+from = "ks-sw-api:tools/kssw-admin"
+to = "tools/kssw-admin"
+executable = true
+
+[[files]]
+from = "self:dist/tools-README-ja.txt"
+to = "tools/README-ja.txt"
+
+[[files]]
+from = "self:dist/README-ja.txt"
+to = "README-ja.txt"
+
+[[files]]
+from = "self:LICENSE"
+to = "LICENSES/ks-kuzuha-alternative.txt"
+
+[[files]]
+from = "ks-sw-api:LICENSE"
+to = "LICENSES/ks-sw-api.txt"
+
+[[files]]
+from = "ks-kuzuha-ui:LICENSE"
+to = "LICENSES/ks-kuzuha-ui.txt"
+
+[[files]]
+from = "ks-kuzuha-ui:public/fonts/LICENSE-UDEVGothic.txt"
+to = "LICENSES/UDEVGothic-OFL.txt"
+
+# Never shipped, whatever the source: OS / editor litter.
+[global]
+exclude = [".DS_Store", "Thumbs.db", "*~", ".git", ".gitignore"]

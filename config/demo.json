@@ -1,0 +1,12 @@
+{
+  "$comment": "掲示板の設定（デモサイト。make deploy-demo）。config/site.json と同じで、名前だけ違います。タイトルは network＠mainTags。",
+  "network": "",
+  "locale": "ja",
+  "theme": { "hue": 195, "accentHue": 15.59, "accentStrength": 0, "controls": "standard" },
+  "defaultTags": ["くずはAlternative"],
+  "mainTags": ["くずはAlternative"],
+  "excludeTags": [],
+  "tagsMode": "full",
+  "showTags": true,
+  "links": { "header": [], "related": [], "account": null }
+}

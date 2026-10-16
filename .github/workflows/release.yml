@@ -1,0 +1,60 @@
+name: Release
+
+# Tag v<version> (= [bundle].version in dist/php-min.toml): build the zip
+# from the component repos named in the manifest, smoke-test it on
+# PHP 7.4 + Apache, and attach the zip and its .sha256 to the release.
+# A version with a pre-release suffix (e.g. 0.1.0-alpha.1) makes a
+# pre-release.
+#
+# The component URLs come from dist/php-min.toml and are cloned without
+# credentials, so this works once those repos are public.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Tag matches the manifest version
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' dist/php-min.toml)
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, manifest $version" >&2; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          case "$version" in *-*) echo "PRERELEASE=--prerelease" >> "$GITHUB_ENV" ;; *) echo "PRERELEASE=" >> "$GITHUB_ENV" ;; esac
+
+      - name: Build
+        run: make dist
+
+      - name: Smoke test
+        run: |
+          uv run --no-project --with playwright==1.64.0 playwright install --with-deps chromium-headless-shell
+          make smoke
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip=build/ks-kuzuha-alternative-$VERSION.zip
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$zip" "$zip.sha256" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$zip" "$zip.sha256" $PRERELEASE \
+              --title "ks-kuzuha-alternative $VERSION" --notes "SHA-256: $(cut -d' ' -f1 "$zip.sha256")"
+          fi

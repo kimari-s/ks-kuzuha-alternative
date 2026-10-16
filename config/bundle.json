@@ -1,0 +1,8 @@
+{
+  "$comment": "Build-time UI config of every ks-kuzuha-alternative zip (KUZUHA_CONFIG): neutral, so one UI build serves every operator. Board name, colours, tags etc. live in the runtime bbs/config.json (config/site.json, config/demo.json). Keys: ks-kuzuha-ui README \"Instance config\". The API sits next to the UI in api/, hence apiBaseUrl ./api (same origin, no CORS).",
+  "locale": "ja",
+  "apiBaseUrl": "./api",
+  "storagePrefix": "ks-kuzuha-alternative.",
+  "network": "あやしいわーるど",
+  "repoUrl": "https://github.com/kimari-s/ks-kuzuha-alternative"
+}
