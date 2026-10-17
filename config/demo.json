@@ -1,12 +1,11 @@
 {
-  "$comment": "掲示板の設定（デモサイト。make deploy-demo）。config/site.json と同じで、名前だけ違います。タイトルは network＠mainTags。",
+  "$comment": "Board settings of the demo site (make deploy-demo): the same as config/site.json except the name. The title is network＠boardTags.",
   "network": "",
   "locale": "ja",
   "theme": { "hue": 195, "accentHue": 15.59, "accentStrength": 0, "controls": "standard" },
-  "defaultTags": ["くずはAlternative"],
-  "mainTags": ["くずはAlternative"],
+  "boardTags": ["くずはAlternative"],
   "excludeTags": [],
   "tagsMode": "full",
   "showTags": true,
-  "links": { "header": [], "related": [], "account": null }
+  "links": { "header": [], "account": null }
 }

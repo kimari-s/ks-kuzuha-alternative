@@ -7,10 +7,16 @@
     python3 dist/build.py --site-config config/demo.json --suffix demo
 
 Steps: fetch every component at its pinned commit into build/src/, build the
-UI with the manifest's (neutral) build-time config, copy [[files]] into
-build/stage/<top>/, write the runtime site config (bbs/config.json, with
-"release" from [bundle.release]), write build/<name>-<version>[-<suffix>].zip
-and its .sha256 (sha256sum format).
+UI with the manifest's (neutral) build-time config: [ui].config, the board
+defaults [ui].defaults and "release" from [bundle.release], merged into
+build/ui-config.json; copy [[files]] into build/stage/<top>/; write the board
+defaults as the operator's template (bbs/config.example.json) and, with
+--site-config only (the demo), a runtime bbs/config.json; write
+build/<name>-<version>[-<suffix>].zip and its .sha256 (sha256sum format).
+
+The plain zip ships no bbs/config.json: the operator copies
+config.example.json to config.json, so uploading a new release over the old
+one never replaces their settings.
 
 The zip is deterministic for the same inputs: entries sorted, fixed
 timestamps (SOURCE_DATE_EPOCH, else the newest pinned commit's time), fixed
@@ -154,20 +160,42 @@ def stage(manifest: dict, comps: dict[str, Component], top_dir: Path) -> None:
                 dest.chmod(0o755)
 
 
-def write_site_config(manifest: dict, src: Path, dest: Path) -> None:
-    """The runtime config.json the UI reads at load: src plus "release"."""
-    bundle = manifest["bundle"]
-    cfg = json.loads(src.read_text(encoding="utf-8"))
+def read_object(path: Path) -> dict:
+    cfg = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(cfg, dict):
-        sys.exit(f"{src}: not a JSON object")
+        sys.exit(f"{path}: not a JSON object")
+    return cfg
+
+
+def release_of(manifest: dict) -> dict:
+    """[bundle.release] with {name} / {version} substituted, plus the version."""
+    bundle = manifest["bundle"]
     sub = {"name": bundle["name"], "version": bundle["version"]}
     rel = {k: str(v).format(**sub) for k, v in bundle.get("release", {}).items()}
     release = {"name": rel.get("name", bundle["name"]), "version": bundle["version"]}
     if "url" in rel:
         release["url"] = rel["url"]
-    cfg["release"] = release
+    return release
+
+
+def ui_build_config(manifest: dict, base: Path, defaults: Path, out: Path) -> Path:
+    """The build-time UI config: base, then the board defaults ("$" comment
+    keys left out), then "release". Without a config.json the board looks
+    exactly like with an unedited copy of config.example.json, and the
+    release in the footer follows the build, not the operator's file."""
+    cfg = read_object(base)
+    cfg.update({k: v for k, v in read_object(defaults).items() if not k.startswith("$")})
+    cfg["release"] = release_of(manifest)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return out
+
+
+def write_json_file(src: Path, dest: Path, key: str) -> None:
+    """A runtime file next to index.html, copied from src (checked to be an object)."""
+    cfg = read_object(src)
     if dest.exists():
-        sys.exit(f"{dest} already staged by [[files]]; it is written from [ui].site_config")
+        sys.exit(f"{dest} already staged by [[files]]; it is written from [ui].{key}")
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -202,7 +230,7 @@ def main() -> int:
     ap.add_argument("--worktree", action="append", default=[], metavar="NAME=PATH",
                     help="use this directory as is, no clone or checkout (dev builds only; the zip is marked)")
     ap.add_argument("--ui-config", help="build-time UI config instead of the manifest's [ui].config (KUZUHA_CONFIG)")
-    ap.add_argument("--site-config", help="runtime UI config (bbs/config.json) instead of the manifest's [ui].site_config")
+    ap.add_argument("--site-config", help="also ship this runtime UI config as bbs/config.json (the demo); the plain zip has none")
     ap.add_argument("--suffix", default="", help="appended to the zip name: <name>-<version>-<suffix>.zip")
     ap.add_argument("--out", default=str(ROOT / "build"), help="output directory (default build/)")
     a = ap.parse_args()
@@ -236,8 +264,9 @@ def main() -> int:
         p = Path(cli or manifest["ui"][key])
         return (p if p.is_absolute() else (Path.cwd() / p if cli else ROOT / p)).resolve()
 
-    build_ui(manifest, comps, given_or_manifest(a.ui_config, "config"))
-    site_config = given_or_manifest(a.site_config, "site_config")
+    defaults = given_or_manifest(None, "defaults")
+    build_ui(manifest, comps, ui_build_config(manifest, given_or_manifest(a.ui_config, "config"), defaults, out / "ui-config.json"))
+    site_config = Path(a.site_config).resolve() if a.site_config else None
 
     version = bundle["version"]
     top = bundle["top"].format(name=bundle["name"], version=version)
@@ -247,7 +276,9 @@ def main() -> int:
         shutil.rmtree(stage_dir)
     (stage_dir / top).mkdir(parents=True)
     stage(manifest, comps, stage_dir / top)
-    write_site_config(manifest, site_config, stage_dir / top / manifest["ui"]["site_config_to"])
+    write_json_file(defaults, stage_dir / top / manifest["ui"]["defaults_to"], "defaults")
+    if site_config is not None:
+        write_json_file(site_config, stage_dir / top / manifest["ui"]["site_config_to"], "site_config_to")
 
     if "SOURCE_DATE_EPOCH" in os.environ:
         epoch = int(os.environ["SOURCE_DATE_EPOCH"])

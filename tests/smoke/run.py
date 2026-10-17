@@ -5,8 +5,10 @@ in docker (tests/smoke/Dockerfile), and run check.py against it.
 
 The zip's .sha256 next to it is verified first. The site is served at
 http://localhost:<port>/bbs/ (a secure context, like HTTPS); check.py also
-opens it under a non-localhost name over plain http, and edits the served
-bbs/config.json to check the runtime config. Then the admin CLI shipped in
+opens it under a non-localhost name over plain http, creates, edits and
+removes bbs/config.json to check the runtime config (the zip ships only
+bbs/config.example.json), and edits api/.htaccess to check the settings
+page's security warning. Then the admin CLI shipped in
 tools/ (outside bbs/): a token made with `kssw-admin token new` is put
 into api/config.php (with admin_allow_http, as the test is plain http), and
 `capabilities`, `posts list` and `posts delete --dry-run` must work against
@@ -91,8 +93,8 @@ def wait_mounted(name: str, path: str, seconds: float = 30) -> None:
 
 def check_cli_shipped(zip_path: Path, cli: Path) -> None:
     """tools/kssw-admin is in the zip, outside bbs/, executable, with its README."""
-    if not cli.is_file() or not (cli.parent / "README-ja.txt").is_file():
-        sys.exit("bundle lacks tools/kssw-admin or tools/README-ja.txt")
+    if not cli.is_file() or not (cli.parent / "README.txt").is_file():
+        sys.exit("bundle lacks tools/kssw-admin or tools/README.txt")
     with zipfile.ZipFile(zip_path) as z:
         info = next(i for i in z.infolist() if i.filename.endswith("/tools/kssw-admin"))
         mode = info.external_attr >> 16 & 0o777
@@ -174,6 +176,7 @@ def main() -> int:
     ap.add_argument("--full", action="store_true")
     ap.add_argument("--port", type=int, default=int(os.environ.get("SMOKE_PORT", "8791")))
     ap.add_argument("--keep", action="store_true", help="leave the container running")
+    ap.add_argument("--shots", default=os.environ.get("SMOKE_SHOTS"), help="save screenshots of the warnings and the admin setup here")
     a = ap.parse_args()
 
     zip_path = Path(a.zip).resolve()
@@ -196,9 +199,13 @@ def main() -> int:
         z.extractall(work)
     top = work / tops.pop()
     site = top / "bbs"
-    for must in ["index.html", "config.json", "api/index.php", "api/.htaccess"]:
+    for must in ["index.html", "config.example.json", "api/index.php", "api/.htaccess", "api/config.example.php"]:
         if not (site / must).is_file():
             sys.exit(f"bundle lacks bbs/{must}")
+    # Settings are the operator's: an upload over the old folder keeps them.
+    for never in ["config.json", "api/config.php"]:
+        if (site / never).exists():
+            sys.exit(f"bundle ships bbs/{never}; it must ship only the example")
     cli = top / "tools" / "kssw-admin"
     check_cli_shipped(zip_path, cli)
 
@@ -213,7 +220,7 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    # The optional discovery document, placed as README-ja.txt says (the
+    # The optional discovery document, placed as README.txt says (the
     # static file and its .htaccess in <document root>/.well-known/).
     well_known = top / "well-known"
     for must in ["kssw", ".htaccess"]:
@@ -242,7 +249,8 @@ def main() -> int:
             except urllib.error.HTTPError as e:
                 if e.code not in (403, 404):
                     sys.exit(f"{path}: HTTP {e.code}")
-        cmd = [sys.executable, str(HERE / "check.py"), base, "--site-dir", str(site)] + (["--full"] if a.full else [])
+        cmd = [sys.executable, str(HERE / "check.py"), base, "--site-dir", str(site)] + (["--full"] if a.full else []) \
+            + (["--shots", a.shots] if a.shots else [])
         code = subprocess.run(cmd).returncode
         if code != 0:
             return code

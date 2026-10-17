@@ -13,37 +13,42 @@ version = "0.1.0-alpha.1"
 # Top folder inside the zip. {name} and {version} are substituted.
 top = "{name}-{version}"
 
-# Shown in the UI footer ("<name> v<version>", linking to url): injected as
-# "release" into the runtime config ([ui].site_config). {name} and
-# {version} are substituted.
+# Shown in the UI footer and on the About page ("<name> v<version>",
+# linking to url): put as "release" into the build-time UI config. {name}
+# and {version} are substituted.
 [bundle.release]
-name = "kimari-s/{name}"
+name = "{name}"
 url = "https://github.com/kimari-s/{name}"
 
 [components.ks-sw-api]
 url = "https://github.com/kimari-s/ks-sw-api.git"
-commit = "35fe6b92f39e146f6cfb7d8bf8a1d739da47e364"  # v0.2.0-alpha.1 (kssw 1, ks-sw-spec d1af5a8 = v0.1.0-alpha.1)
+commit = "fbb57cd28a193b76ade7e7e8239cbc056bc16c38"  # v0.2.0-alpha.1 + cooldown 5 s, admin.php password setup form, /v1/meta impl_url, sample admin token refused (kssw 1, ks-sw-spec 71ef927)
 
 [components.ks-kuzuha-ui]
 url = "https://github.com/kimari-s/ks-kuzuha-ui.git"
-commit = "11ba939b8b561730fd1452d6fb92a04e614b466d"  # v0.5.0-alpha.1
+commit = "5bea480082ce00e8ffedb17e9f55fb27fb2cb573"  # v0.5.0-alpha.1 + about.html links, settings-page security self-check, header View menu, boardTags / postTags, listing scope Local / Global, new icon
 
 # The UI build: run in the ks-kuzuha-ui checkout. `config` is a path in this
-# repo, passed as KUZUHA_CONFIG (apiBaseUrl "./api": same origin, no CORS).
-# It is neutral: every variant (the plain zip, the demo) ships the same UI
-# build. Every other KUZUHA_* / VITE_* variable is removed from the
-# environment so the build depends only on this manifest.
+# repo (apiBaseUrl "./api": same origin, no CORS); `defaults` (board name,
+# colours, tags) and "release" are merged over it, and the result is passed
+# as KUZUHA_CONFIG. It is neutral: every variant (the plain zip, the demo)
+# ships the same UI build. Every other KUZUHA_* / VITE_* variable is removed
+# from the environment so the build depends only on this manifest.
 #
-# `site_config` is the runtime config the UI reads at load (board name,
-# colours, tags; operator-editable by FTP), written to `site_config_to`
-# with "release" added. build.py --site-config replaces it (the demo).
+# `defaults` is also shipped as `defaults_to` (config.example.json), the
+# operator's template: copied to config.json and edited by FTP, it is read
+# at load. The plain zip has no config.json, so an upgrade keeps the
+# operator's. build.py --site-config ships a config.json too, at
+# `site_config_to` (the demo: make deploy-demo uploads it only when the
+# server has none).
 [ui]
 component = "ks-kuzuha-ui"
 install = ["npm", "ci", "--no-audit", "--no-fund"]
 build = ["npm", "run", "build"]
 output = "dist"
 config = "config/bundle.json"
-site_config = "config/site.json"
+defaults = "config/site.json"
+defaults_to = "bbs/config.example.json"
 site_config_to = "bbs/config.json"
 
 # What goes where. `from` is "<component>:<path>" or "self:<path>" (this
@@ -62,7 +67,7 @@ to = "bbs/api/"
 exclude = ["/config.php", "/data", "*.sqlite3", "*.sqlite3-*"]
 
 # Optional: the kssw discovery document (/.well-known/kssw) for the host's
-# document root, outside bbs/ (README-ja.txt says how to place it). Its
+# document root, outside bbs/ (README.txt says how to place it). Its
 # base "/bbs/api" fits bbs/ uploaded to the document root.
 [[files]]
 from = "ks-sw-api:php/well-known/"
@@ -77,12 +82,12 @@ to = "tools/kssw-admin"
 executable = true
 
 [[files]]
-from = "self:dist/tools-README-ja.txt"
-to = "tools/README-ja.txt"
+from = "self:dist/tools-README.txt"
+to = "tools/README.txt"
 
 [[files]]
-from = "self:dist/README-ja.txt"
-to = "README-ja.txt"
+from = "self:dist/README.txt"
+to = "README.txt"
 
 [[files]]
 from = "self:LICENSE"
@@ -99,6 +104,10 @@ to = "LICENSES/ks-kuzuha-ui.txt"
 [[files]]
 from = "ks-kuzuha-ui:public/fonts/LICENSE-UDEVGothic.txt"
 to = "LICENSES/UDEVGothic-OFL.txt"
+
+[[files]]
+from = "ks-kuzuha-ui:public/LICENSE-MaterialSymbols.txt"
+to = "LICENSES/MaterialSymbols-Apache-2.0.txt"
 
 # Never shipped, whatever the source: OS / editor litter.
 [global]

@@ -1,12 +1,11 @@
 {
-  "$comment": "掲示板の設定。FTP で書き換えると、次に開いたときから反映されます（再 build 不要）。書き方は README の「掲示板の名前・色を変える」。$ で始まる項目は説明で、無視されます。",
+  "$comment": "Board settings. Copy this file to config.json (same folder), edit it and upload it by FTP: the board picks it up the next time it is opened (no rebuild). Without config.json the board uses these values. See README \"Changing the board name and colours\"; the link row under the post form (links.related) is in \"About page and custom pages\". Keys starting with $ are comments and are ignored.",
   "network": "あやしいわーるど",
   "locale": "ja",
   "theme": { "hue": 195, "accentHue": 15.59, "accentStrength": 0, "controls": "standard" },
-  "defaultTags": [],
-  "mainTags": [],
+  "boardTags": [],
   "excludeTags": [],
   "tagsMode": "full",
   "showTags": true,
-  "links": { "header": [], "related": [], "account": null }
+  "links": { "header": [], "account": null }
 }

@@ -1,133 +1,143 @@
 # ks-kuzuha-alternative
 
-くずは風（あやしいわーるど系）の掲示板を、**普通のレンタルサーバに FTP で置くだけ**で動かすための配布物です。
+A kuzuha-style message board (in the line of Ayashii World, あやしいわーるど) that runs on **ordinary shared hosting: upload it by FTP and it works**.
 
-- 画面：[ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui)（ブラウザで動く JavaScript。新しい順の一覧・ツリー表示・過去ログ検索・匿名投稿）
-- API：[ks-sw-api](https://github.com/kimari-s/ks-sw-api)（PHP + SQLite。データベースサーバ・常駐プロセス不要）。[6umi.net](https://6umi.net) の API から生まれた、**kssw** の PHP の参照実装
+- UI: [ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui) (JavaScript that runs in the browser: newest-first listing, tree view, past-log search, anonymous posting)
+- API: [ks-sw-api](https://github.com/kimari-s/ks-sw-api) (PHP + SQLite; no database server, no long-running process). The PHP reference implementation of **kssw**, derived from the [6umi.net](https://6umi.net) API
 
-画面と API の間の取り決め（プロトコル）が **kssw** です。仕様は [ks-sw-spec](https://github.com/kimari-s/ks-sw-spec) にあります。kssw を話す画面と API なら、組み合わせを替えられます。
+**kssw** is the agreement (protocol) between the UI and the API. Its specification is [ks-sw-spec](https://github.com/kimari-s/ks-sw-spec). Any UI and any API that speak kssw can be combined.
 
-この 2 つを 1 つのフォルダにまとめた zip を、リリースごとに配っています。
+Each release is one zip that puts these two together in a single folder.
 
-デモ：<https://demo.newsupers.net/kuzuha-alternative/>
+Demo: <https://demo.newsupers.net/kuzuha-alternative/> (in English: <https://demo.newsupers.net/kuzuha-alternative/?lang=en>)
 
-> **公式の KuzuhaScript ではありません。** くずはスクリプトの見た目と使い勝手を参考にした、別の実装です。
-> 旧くずはの設定ファイル・過去ログ・CGI との互換はありません。
+The demo is an example installation on a free shared host (XREA Free). The ads you see there are inserted automatically by XREA as a condition of the free plan; they are not there to make money for this project (see "Hosts with mandatory ads" below).
 
-## 必要なもの
+> **This is not the official KuzuhaScript.** It is a separate implementation modelled on the look and feel of KuzuhaScript.
+> It is not compatible with the old kuzuha settings files, past logs or CGI.
 
-| 項目 | 条件 |
+## Requirements
+
+| Item | Requirement |
 |---|---|
-| PHP | 7.4 以上（8.x 可）。PDO と **pdo_sqlite** が有効なこと（多くのレンタルサーバで既定で有効） |
-| Web サーバ | Apache。**`.htaccess` が使え、mod_rewrite が有効**なこと |
-| HTTPS | **推奨**。`http://` でも動きますが、書き込みの内容が暗号化されずに送られます。無料 SSL が使えるサーバでは `https://` にしてください |
-| その他 | MySQL などのデータベースは不要。Composer・SSH も不要（FTP だけで設置できます） |
+| PHP | 7.4 or later (8.x is fine), with PDO and **pdo_sqlite** enabled (enabled by default on most shared hosts) |
+| Web server | Apache, with **`.htaccess` allowed and mod_rewrite enabled** |
+| HTTPS | **Recommended.** `http://` works, but posts are sent unencrypted. If your host offers free SSL, use `https://` |
+| Other | No MySQL or other database. No Composer, no SSH (FTP is enough to install) |
 
-PHP で `pdo_sqlite` が使えるかは、サーバの管理画面か `phpinfo()` で確かめてください。
+Check whether PHP has `pdo_sqlite` in your host's control panel or with `phpinfo()`.
 
-**Web で動く PHP の版に注意**してください。管理画面の表示や SSH の `php -v` が 7.4 以上でも、Web の既定が古い版のサーバがあります（XREA は既定が 7.0）。PHP が古いと、`api/v1/meta` を開いたときに `"code":"php_version"` と版を示すエラーが返ります。そのときは管理画面で PHP のバージョンを 7.4 以上（8.x 推奨）に変えてください。
+**Watch out for the PHP version used on the web.** Even when the control panel or `php -v` over SSH shows 7.4 or later, some hosts run an older version on the web by default (XREA's default is 7.0). If PHP is too old, opening `api/v1/meta` returns an error with `"code":"php_version"` and the version. In that case, switch PHP to 7.4 or later (8.x recommended) in your host's control panel.
 
-## 中身
+## What is in the zip
 
 ```
 ks-kuzuha-alternative-0.1.0-alpha.1/
-├── README-ja.txt          簡単な説明
-├── LICENSES/              各部品のライセンス
-├── tools/                 管理コマンド（自分のパソコンで使う。サーバには置かない）
+├── README.txt             short instructions
+├── LICENSES/              licences of each component
+├── tools/                 admin command (use it on your own computer; do not put it on the server)
 │   ├── kssw-admin
-│   └── README-ja.txt
-├── well-known/            任意：ドメイン直下の /.well-known/ に置く案内（下の「発見用のファイル」）
+│   └── README.txt
+├── well-known/            optional: a pointer for /.well-known/ at the domain root ("Discovery file" below)
 │   ├── kssw
 │   └── .htaccess
-└── bbs/                   ← これをサーバに置く（フォルダ名は自由）
-    ├── index.html         掲示板の画面
-    ├── assets/            画面の JavaScript・CSS
-    ├── fonts/             UDEV Gothic（罫線のツリー表示を揃えるための等幅フォント）
-    ├── favicon.png
-    ├── config.json        掲示板の名前・色などの設定（FTP で書き換えられます）
-    └── api/               PHP の API
+└── bbs/                   ← put this on the server (any folder name)
+    ├── index.html         the board
+    ├── about.html         the About page ("About page and custom pages" below)
+    ├── assets/            the UI's JavaScript and CSS
+    ├── fonts/             UDEV Gothic (monospaced font that keeps the tree view's box-drawing lines aligned)
+    ├── favicon.svg, favicon-32.png, apple-touch-icon.png  the icon (replace them to use your own)
+    ├── config.example.json  board name, colours and other settings: copy to config.json to change them
+    └── api/               the PHP API
         ├── index.php
-        ├── admin.php      最小限の管理画面（予備）
-        ├── .htaccess      URL の書き換えと、設定・DB へのアクセス禁止
+        ├── admin.php      minimal admin page (fallback)
+        ├── .htaccess      URL rewriting, and blocks access to settings and the database
         ├── config.example.php
         └── lib/
 ```
 
-画面は同じフォルダの `api/` を呼びます（同じドメインなので CORS の設定は不要）。
+The UI calls `api/` in the same folder (same domain, so no CORS setup is needed).
 
-## 設置（FTP）
+## Install (FTP)
 
-1. [Releases](https://github.com/kimari-s/ks-kuzuha-alternative/releases) から `ks-kuzuha-alternative-<版>.zip` を取り、展開します。
-	- 改ざんの確認：同じ所にある `.sha256` の値と、`sha256sum`（Windows は `certutil -hashfile <zip> SHA256`）の結果が一致すること。
-2. `bbs/` フォルダを、中身ごと FTP でアップロードします。例：`public_html/bbs/`。
-	- フォルダ名は自由です（`kuzuha/` でも、ドメイン直下でも可）。
-	- **`api/.htaccess` を必ず送ってください。** ドットで始まるファイルは FTP ソフトの設定で隠れていることがあります。`.htaccess` が無いと API が動かず、設定ファイルが外から見える状態になります。
-	- 転送モードは「自動」か「バイナリ」で構いません（フォントはバイナリで送る必要があります）。
-3. ブラウザで `https://あなたのドメイン/bbs/api/v1/meta` を開き、次のように出れば API は動いています（`impl_version` などの項目も並びます）。
+1. Download `ks-kuzuha-alternative-<version>.zip` from [Releases](https://github.com/kimari-s/ks-kuzuha-alternative/releases) and extract it.
+	- To check it has not been tampered with: the `.sha256` file next to it must match the output of `sha256sum` (on Windows, `certutil -hashfile <zip> SHA256`).
+2. Upload the `bbs/` folder, with everything in it, by FTP. Example: `public_html/bbs/`.
+	- Any folder name works (`kuzuha/`, or directly at the domain root).
+	- **Make sure `api/.htaccess` is uploaded.** Some FTP programs hide files that start with a dot. Without `.htaccess` the API does not work, and the settings file can be read from outside.
+	- There is no `config.json` in the zip: the board starts with the default settings. To change them, see "Changing the board name and colours" below.
+	- Transfer mode "auto" or "binary" is fine (the fonts must be sent in binary).
+3. Open `https://your-domain/bbs/api/v1/meta` in a browser. If you see something like the following, the API is working (other fields such as `impl_version` follow).
 
 	```
 	{"protocol":"kssw","version":"1","profile":"min","impl":"php", ...}
 	```
 
-4. `https://あなたのドメイン/bbs/` を開いて、書き込めれば完了です。
+4. Open `https://your-domain/bbs/`. If you can post, the board works.
+5. Open the board's settings page (設定 / Settings in the header). It checks from your browser that the files the API keeps private (settings, database) cannot be fetched from outside. **If a red security warning appears**, `api/.htaccess` is missing or not in effect: upload it (turn on "show hidden files" in your FTP program) and reload. The settings page also says when `config.json` has a mistake.
 
-最初の書き込み（正確には最初のアクセス）で、データベースのファイルとテーブルが自動で作られます。
+The database file and its tables are created automatically on the first post (strictly, on the first request).
 
-### 発見用のファイル（任意）
+### Discovery file (optional)
 
-kssw の画面やツールは、`https://あなたのドメイン/.well-known/kssw` を読んで、そのドメインの API の場所を知ることができます（kssw の仕様 §6）。**置かなくても掲示板は動きます。** ドメイン直下（公開フォルダの一番上）に書き込めるときだけ、次のようにします。
+kssw UIs and tools can learn where a domain's API is by reading `https://your-domain/.well-known/kssw` (kssw specification §6). **The board works without it.** Do this only if you can write to the domain root (the top of your public folder):
 
-1. zip の `well-known/` の中の `kssw` と `.htaccess` を、公開フォルダ直下の `.well-known/` フォルダへアップロードします（例：`public_html/.well-known/kssw`）。
-	- `.well-known/` が既にあり（SSL 証明書用など）、`.htaccess` もあるときは、上書きせず、こちらの `.htaccess` の中身を末尾に書き足します。
-2. `bbs/` をドメイン直下以外に置いたときは、`kssw` の `"base": "/bbs/api"` を、API のフォルダの URL のパス（例：`/kuzuha/api`）に書き換えます。
-3. `https://あなたのドメイン/.well-known/kssw` を開き、書いた内容が出れば完了です。
+1. Upload `kssw` and `.htaccess` from the zip's `well-known/` folder to a `.well-known/` folder directly under your public folder (e.g. `public_html/.well-known/kssw`).
+	- If `.well-known/` already exists (for SSL certificates, for example) and already has an `.htaccess`, do not overwrite it; append the contents of ours to the end of it.
+2. If `bbs/` is not at the domain root, change `"base": "/bbs/api"` in `kssw` to the URL path of the API folder (e.g. `/kuzuha/api`).
+3. Open `https://your-domain/.well-known/kssw`. If it shows what you wrote, you are done.
 
-ドメイン直下に `.htaccess` を置けるなら、ファイルを置く代わりに書き換え（rewrite）で API に答えさせることもできます。書き方は ks-sw-api の `php/well-known/README.md` にあります。
+If you can put an `.htaccess` at the domain root, you can instead have the API answer it through a rewrite rather than placing the file. How to write it is in ks-sw-api's `php/well-known/README.md`.
 
-## 掲示板の名前・色を変える
+## Changing the board name and colours
 
-`bbs/config.json` を書き換えて FTP で送り直すだけです。次に掲示板を開いたときから反映されます（build し直す必要はありません）。テキストエディタで開き、**UTF-8** のまま保存してください。
+Copy `bbs/config.example.json` to **`bbs/config.json`** (same folder), edit it, and upload it by FTP. The change shows the next time the board is opened (no rebuild needed). Open it in a text editor and save it as **UTF-8**. Without `config.json` the board uses the values in `config.example.json`, which are also built in.
 
 ```json
 {
-  "network": "あやしいわーるど",
-  "defaultTags": ["うちの掲示板"],
-  "mainTags": ["うちの掲示板"],
+  "network": "Ayashii World",
+  "boardTags": ["My board"],
   "theme": { "hue": 30, "accentHue": 200, "accentStrength": 0.6 }
 }
 ```
 
-この例では、タイトルが「あやしいわーるど＠うちの掲示板」になり、背景が茶色寄りになります。書かなかった項目は既定値のままです。
+With this example the title becomes "Ayashii World＠My board" and the background turns brownish. Keys you leave out keep their defaults. The default `network` (as in `config.example.json`) is `あやしいわーるど` (Ayashii World).
 
-タイトルの `＠` の後は、掲示板のタグ（`mainTags`）です。書き込みにはこのタグが付き（`defaultTags`）、一覧にはこのタグの付いた書き込みが出ます。`mainTags` が空なら、タイトルは `network` だけで、全部の書き込みが出ます。
+The part of the title after `＠` is the board's tag (`boardTags`). Posts get this tag, and the listing (Local) shows the posts that carry it. If `boardTags` is empty, the title is just `network` and every post is listed.
 
-- 名前（タグ）を後から変えると、それまでの書き込みは古いタグのままなので、一覧に出なくなります。続けて出すには、しばらく古いタグも並べます（例：`"mainTags": ["新しい名前", "古い名前"]`。タイトルは「新しい名前+古い名前」）
-- `＠` を別の文字にするには `"messages": { "network.at": "{network} / {tags}" }` のように書きます
+- If you rename the board (its tag) later, earlier posts keep the old tag and drop out of the listing. To keep showing them, list the old tag too for a while (e.g. `"boardTags": ["New name", "Old name"], "postTags": ["New name"]`; the title becomes "New name+Old name").
+- To use something other than `＠`, write e.g. `"messages": { "network.at": "{network} / {tags}" }`.
 
-| 項目 | 意味 |
+| Key | Meaning |
 |---|---|
-| `network` | タイトルの `＠` の前。`""` ならタイトルは `＠<タグ>` |
-| `theme.hue` | 背景の色相（0〜360。195 が既定の青緑の黒板色） |
-| `theme.accentHue` / `theme.accentStrength` | ボタンなどを押したときの色の色相（0〜360）と強さ（0〜1。0 で白） |
-| `theme.controls` | 入力欄と選択範囲の色。`standard`（既定。ブラウザ標準の白い入力欄）か `custom`（テーマの色。入力欄は背景の色相に合わせた暗い色、選択した文字はアクセントの色） |
-| `locale` | 画面の言語（`ja` か `en`） |
-| `defaultTags` / `mainTags` / `excludeTags` | 書き込みに付けるタグ／一覧に出すタグ（タイトルの `＠` の後）／一覧から隠すタグ（例：`["雑談"]`） |
-| `tagsMode` / `showTags` | タグの表示（`full`・`nofilter`・`minimal`）／「タグを表示する」の初期値 |
-| `links` | 見出しと投稿欄の下に出すリンク（例：`"related": [{"label": "トップ", "href": "/"}]`） |
-| `release` | 画面の一番下に出る版の表示。zip を作るときに入ります。消しても動きます |
-| `font` | 画面のフォント（下の「フォントを変える」）。書かなければ同梱の UDEV Gothic |
+| `network` | The part of the title before `＠`. With `""` the title is `＠<tag>` |
+| `theme.hue` | Background hue (0–360; 195, the default, is a blue-green blackboard colour) |
+| `theme.accentHue` / `theme.accentStrength` | Hue (0–360) and strength (0–1; 0 is white) of the colour shown when buttons and the like are pressed |
+| `theme.controls` | Colours of input fields and text selection: `standard` (default; the browser's usual white inputs) or `custom` (theme colours: inputs in a dark shade of the background hue, selected text in the accent colour) |
+| `locale` | Fallback UI language (`ja` or `en`; `ja` as shipped). See "Language" below |
+| `localeAuto` | `false` stops the UI from following the viewer's browser language |
+| `boardTags` / `postTags` / `excludeTags` | The board's tags (the part of the title after `＠`; posts get them and the listing shows their posts) / tags added to posts when they differ from `boardTags` / tags whose posts are hidden from the listing (e.g. `["Chat"]`) |
+| `localTags` / `scope` | Tags whose posts make up the Local listing (default: `boardTags`; e.g. add the tags bots post under without putting them in the title) / the listing a viewer starts with: `local` or `global` (every post). Viewers can switch on the settings page |
+| `tagsMode` / `showTags` | How tags are shown (`full`, `nofilter`, `minimal`) / the initial state of "Show tags" |
+| `links` | Links shown under the header and under the post form. `links.related` is the row under the post form ("About page and custom pages" below) |
+| `release` | The version shown at the very bottom of the page. Built in; do not set it (a `config.json` copied from release 0.1.0-alpha.1 has it: delete that entry, or the old version keeps showing) |
+| `font` | The UI font ("Changing the font" below). Without it, the bundled UDEV Gothic |
 
-ほかの項目と詳しい説明は ks-kuzuha-ui の README の "Instance config" にあります。`$` で始まる項目（`$comment`）は説明書きで、無視されます。
+Other keys and full details are in the ks-kuzuha-ui README, "Instance config". Keys starting with `$` (`$comment`) are notes and are ignored.
 
-- 色と「入力欄・選択範囲」（テーマの色で表示する）は、見る人が「設定」画面で自分好みに変えられます。`config.json` の値は、見る人が変えていないときの既定値です。
-- 書き間違えて JSON として読めなくなると、`config.json` 全体が無視され、zip を作ったときの設定で表示されます（掲示板は止まりません）。ブラウザの開発者ツールのコンソールに警告が出ます。
-- 反映されないときは、ブラウザを再読み込みしてください。サーバによってはキャッシュで数分遅れることがあります。
+- Viewers can change the colours and the "inputs and selection" setting (theme colours) to their liking on the "Settings" (設定) page. The values in `config.json` are the defaults for viewers who have not changed them.
+- If a mistake makes the file unreadable as JSON, the whole `config.json` is ignored and the board shows with the default settings (it keeps working). A value of the wrong type (e.g. text where a list belongs) drops just that setting. Either way the **settings page (設定) shows a notice** saying which file and what is wrong (for broken JSON, the line and column where the browser tells it).
+- If a change does not show, reload the page. On some hosts caching delays it by a few minutes.
 
-### フォントを変える
+### Language
 
-既定のフォントは同梱の UDEV Gothic（`bbs/fonts/`。[UDEV Gothic](https://github.com/yuru7/udev-gothic) v2.2.0 の HSJPDOC 版を、ファイル名だけ短くして改変せずに入れています。SIL Open Font License 1.1）です。別のフォントにするには、`bbs/config.json` に `font` を書きます。
+`locale` (`ja` by default) is the fallback. A viewer whose browser prefers English gets English (`"localeAuto": false` turns that off), and a link with `?lang=en` or `?lang=ja` picks the language and keeps it as the viewer's choice. Details: ks-kuzuha-ui README, "Language".
 
-フォントのファイルを `bbs/fonts/` に FTP で置いて使う例：
+### Changing the font
+
+The default font is the bundled UDEV Gothic (`bbs/fonts/`: the HSJPDOC variant of [UDEV Gothic](https://github.com/yuru7/udev-gothic) v2.2.0, unmodified apart from shorter file names; SIL Open Font License 1.1). To use another font, add `font` to `bbs/config.json`.
+
+Example using font files uploaded to `bbs/fonts/` by FTP:
 
 ```json
 {
@@ -141,82 +151,141 @@ kssw の画面やツールは、`https://あなたのドメイン/.well-known/ks
 }
 ```
 
-見る人のパソコンに入っているフォントを使う例：
+Example using a font installed on the viewer's computer:
 
 ```json
 { "font": { "family": "\"BIZ UDGothic\", monospace" } }
 ```
 
-| 項目 | 意味 |
+| Key | Meaning |
 |---|---|
-| `font.family` | 画面全体のフォント（CSS の `font-family` の書き方。書き込みの本文も含む） |
-| `font.mono` | 書き込みの本文など、等幅で出す所だけのフォント（書かなければ `family` と同じ） |
-| `font.faces` | 読み込むフォントのファイル。1 つずつ `{family, src, format?, weight?, style?}`。`src` は `bbs/` からの相対パスか URL |
-| `font.stylesheets` | 読み込む CSS の URL（Web フォントのサービスの CSS など） |
+| `font.family` | Font for the whole page (written as a CSS `font-family`; includes the post text) |
+| `font.mono` | Font only for the places shown monospaced, such as post text (defaults to `family`) |
+| `font.faces` | Font files to load, one `{family, src, format?, weight?, style?}` each. `src` is a path relative to `bbs/`, or a URL |
+| `font.stylesheets` | URLs of CSS to load (e.g. a web-font service's CSS) |
 
-- ツリー表示の罫線（`　│├└`）と書き込みの AA は、全角がちょうど半角 2 文字分の幅のフォントで揃います。本文には、そういうフォントを選んでください。
-- フォントは使われるときだけ読み込まれます。`family` に UDEV Gothic を含めなければ、同梱のフォントは読み込まれません。
-- 置くフォントのライセンスを確かめてください。同梱の UDEV Gothic のファイルと `LICENSE-UDEVGothic.txt` は変えずに置いておいてください（OFL では、改変したフォントは「UDEV Gothic」を名乗れません）。
-- 詳しくは ks-kuzuha-ui の README の "Fonts" にあります。
+- The tree view's box-drawing lines (`　│├└`) and text art (AA) in posts line up only with a font in which a full-width character is exactly two half-width characters wide. Choose such a font for post text.
+- Fonts are loaded only when used. If `family` does not include UDEV Gothic, the bundled font is not loaded.
+- Check the licence of any font you upload. Leave the bundled UDEV Gothic files and `LICENSE-UDEVGothic.txt` unchanged (under the OFL, a modified font may not call itself "UDEV Gothic").
+- More in the ks-kuzuha-ui README, "Fonts".
 
-## パーミッション
+## About page and custom pages
 
-| 対象 | 設定 |
+The board ships a default About page, `bbs/about.html`. It is a plain static HTML page, not part of the board's JavaScript app.
+
+It says in one line what this is (a kuzuha-style board) and shows what is running, each linked to its source:
+
+- the release (name and version, built into the zip; linked to this repository),
+- the UI version (linked to ks-kuzuha-ui),
+- the API: `impl impl_version` from its `/v1/meta`, linked to `impl_url` (ks-sw-api), then `protocol`, `version`, `profile`, `impl`, `impl_version` and `features`.
+
+The About page is optional: nothing the board needs is on it (notices for the operator are on the settings page).
+
+A small script on the page reads the `config.json` next to it and the API location (`apiBaseUrl`) and fills in these values. Without JavaScript the text still reads.
+
+The page follows the board's language, in this order: `?lang=` in the URL, the viewer's saved choice, the browser language (unless `localeAuto` is `false`), then `locale`, then English. It also uses the board's colours (`theme.hue`, or the viewer's saved colours) and font.
+
+### The link row under the post form
+
+By default, the row of links under the post form shows "About" (広報室 in the Japanese UI), linking to `about.html`. This row is `links.related` in `bbs/config.json`.
+
+Each entry is `{"label": ..., "href": ..., "newTab"?: true}`:
+
+- `label` is either a string or a map by language, e.g. `{"en": "About", "ja": "広報室"}`. The viewer's language is used, else `en`, else the first value.
+- `href` is the link target, e.g. a page next to `index.html`.
+- `newTab: true` opens the link in a new tab.
+
+Setting `links.related` **replaces** the default list, so keep the About entry when you add your own. `"related": []` removes the row.
+
+### Adding your own page
+
+1. Write a page, e.g. `rules.html`.
+2. Upload it to `bbs/`, next to `index.html`.
+3. Add it to `bbs/config.json` (copied from `config.example.json` if you have none yet):
+
+	```json
+	{
+	  "links": {
+	    "related": [
+	      { "label": { "en": "About", "ja": "広報室" }, "href": "about.html" },
+	      { "label": { "en": "Rules", "ja": "ルール" }, "href": "rules.html" }
+	    ]
+	  }
+	}
+	```
+
+**Upgrades overwrite `about.html`** (it is part of the bundle). Put your own text in a page with another name rather than editing `about.html`, or keep a copy of your edited version.
+
+The settings page (設定) shows only the viewer's settings (and the notices above); it has no link row and no link to the About page.
+
+## Permissions
+
+| Target | Setting |
 |---|---|
-| ファイル | 644（FTP ソフトの既定のまま） |
-| フォルダ | 755（同上） |
-| `bbs/api/data/`（DB の置き場） | PHP が書き込めること。下記 |
+| Files | 644 (your FTP program's default) |
+| Folders | 755 (same) |
+| `bbs/api/data/` (where the database lives) | Must be writable by PHP. See below |
 
-`bbs/api/data/` は PHP が自分で作ります。作れない（書き込むとエラーになる）サーバでは、FTP で `data` フォルダを作ってパーミッションを変えてください。
+PHP creates `bbs/api/data/` by itself. On hosts where it cannot (posting fails with an error), create the `data` folder by FTP and change its permissions:
 
-- PHP が FTP と同じユーザで動くサーバ（suEXEC・PHP-FPM。最近のレンタルサーバの多く）：700 か 705
-- PHP が Web サーバのユーザで動くサーバ（mod_php）：707 か 777
+- Hosts where PHP runs as your FTP user (suEXEC, PHP-FPM; most modern shared hosts): 700 or 705
+- Hosts where PHP runs as the web server's user (mod_php): 707 or 777
 
-PHP のファイル（`.php`）に実行権限（755）は要りません。
+PHP files (`.php`) do not need execute permission (755).
 
-## データベースの場所と、公開フォルダの外への移動
+## Database location, and moving it out of the public folder
 
-データは SQLite のファイル 1 つです。既定の場所は `bbs/api/data/kssw.sqlite3` です。`.htaccess` が `data/` と `*.sqlite3` への直接のアクセスを禁じていますが、**できれば公開フォルダ（`public_html` など）の外に置いてください**。`.htaccess` が効かなくなった場合でも、データが外から取られません。
+All data is one SQLite file. Its default location is `bbs/api/data/kssw.sqlite3`. `.htaccess` blocks direct access to `data/` and `*.sqlite3`, but **if you can, put it outside your public folder (`public_html` or similar)**. Then the data cannot be fetched from outside even if `.htaccess` stops working.
 
-1. `bbs/api/config.example.php` を `config.php` という名前でコピーします（同じフォルダ）。
-2. `db_path` を書き換えます。`__DIR__` は `api/` フォルダのことです。例：`public_html/bbs/api/` に置いた場合
+1. Copy `bbs/api/config.example.php` to a file named `config.php` (in the same folder).
+2. Change `db_path`. `__DIR__` is the `api/` folder. Example for `public_html/bbs/api/`:
 
 	```php
-	// ホームの下の kssw/ に置く（public_html の 1 つ上）
+	// in kssw/ under your home directory (one level above public_html)
 	'db_path' => dirname(__DIR__, 3) . '/kssw/kssw.sqlite3',
 	```
 
-	`dirname(__DIR__, 3)` は `api/` から 3 つ上（`api` → `bbs` → `public_html` → ホーム）です。置いた深さに合わせて数を変えてください。絶対パス（`'/home/あなた/kssw/kssw.sqlite3'`）でも構いません。
-3. 置き場のフォルダ（例：`kssw/`）は PHP が書き込める必要があります（上のパーミッションと同じ）。無ければ PHP が作ります。
-4. すでに書き込みがある場合は、移す前に `kssw.sqlite3` を新しい場所へ FTP で移してください。`-journal` `-wal` `-shm` で終わるファイルがあれば一緒に移します。
+	`dirname(__DIR__, 3)` is three levels up from `api/` (`api` → `bbs` → `public_html` → home). Adjust the number to how deep you placed it. An absolute path (`'/home/you/kssw/kssw.sqlite3'`) is fine too.
+3. The folder (e.g. `kssw/`) must be writable by PHP (same as the permissions above). PHP creates it if it does not exist.
+4. If the board already has posts, move `kssw.sqlite3` to the new location by FTP before switching. If there are files ending in `-journal`, `-wal` or `-shm`, move them too.
 
-`config.php` ではほかに、時刻のタイムゾーン（既定 `Asia/Tokyo`）、連続投稿の間隔（既定 30 秒）などを変えられます。各項目の説明は `config.example.php` の中にあります。`config.php` は `.htaccess` で外から読めないようにしてあります。
+In `config.php` you can also change the time zone (default `Asia/Tokyo`), the minimum interval between posts (default 5 seconds), and more. Each setting is explained in `config.example.php`. `.htaccess` keeps `config.php` from being read from outside.
 
-### バックアップ
+### Backup
 
-管理コマンドの `kssw-admin backup kssw.sqlite3` で、書き込み中でも壊れない完全なコピーが取れます（下の「管理」）。管理コマンドを使わない場合は、`kssw.sqlite3` を FTP で取ってくるだけです（書き込みの少ない時間帯に取ってください）。
+The admin command `kssw-admin backup kssw.sqlite3` makes a complete copy that stays consistent even while posts are being written ("Administration" below). Without the admin command, just download `kssw.sqlite3` by FTP (at a quiet time, when few posts are coming in).
 
-## 更新
+## Upgrade
 
-1. 新しい版の zip を展開し、**展開した `bbs/config.json` を消します**（サーバにある自分の `config.json` を上書きしないため）。
-	- `config.json` を書き換えていない場合は、消さずに上書きしても構いません。
-	- 新しい版で項目が増えたときは、リリースノートに書きます。必要なら新しい `config.json` を見比べて、自分の方に書き足してください。
-2. `bbs/` の中身を**上書き**でアップロードします。
-3. `api/config.php` と `api/data/`（データベース）は zip に入っていないので、上書きしても消えません。
-	- **FTP ソフトの「同期」「ミラー」（サーバ側にしか無いファイルを削除する機能）は使わないでください。** 設定とデータベースが消えます。
-4. `assets/` には古い版の `index-xxxxxxxx.js` などが残りますが、使われないだけで害はありません。気になれば消してください。
+1. Extract the new zip.
+2. Upload the contents of `bbs/`, **overwriting** the old files. Nothing needs to be deleted first.
+3. Your settings stay: the zip ships only the examples (`config.example.json`, `api/config.example.php`), never `config.json` or `api/config.php`, and not `api/data/` (the database), so overwriting does not touch them.
+	- When a release adds new keys, the release notes say so. If needed, compare the new `config.example.json` with your `config.json` and add them to yours.
+	- Upgrading from 0.1.0-alpha.1, whose zip shipped a `config.json`: delete the `"release"` entry from your `config.json` (the version now comes with the build).
+	- **Do not use your FTP program's "synchronise" or "mirror" (features that delete files that exist only on the server).** They delete your settings and your database.
+4. `about.html` is replaced by the new version ("About page and custom pages" above).
+5. Old files such as `index-xxxxxxxx.js` stay in `assets/`. They are no longer used and do no harm; delete them if you like.
 
-データベースの形式が変わる版では、リリースノートに手順を書きます。
+Releases that change the database format will include instructions in the release notes.
 
-## 管理（投稿の削除・メンテナンス・バックアップ）
+## Administration (deleting posts, maintenance, backup)
 
-管理は、zip の `tools/kssw-admin`（管理コマンド）で、**自分のパソコンから**行います。サーバには上げません（`bbs/` の外に置いてあるのはそのためです）。Python 3.8 以上があればインストール不要で動き、出力はすべて JSON なので、Claude などの **AI エージェントにそのまま操作させる**のが主な使い方です。
+Two ways:
 
-ブラウザだけで投稿を消したい人のために、`bbs/api/admin.php` に最小限の管理画面（パスワードでログインし、最近の投稿を削除・復元するだけ）もあります。下の「管理画面（予備）」を見てください。
+| | You need | You can |
+|---|---|---|
+| **Minimal administration without Python**: the admin page `bbs/api/admin.php` in a browser | a browser, and the board on `https://` | log in with a password, see recent posts, delete / restore them |
+| **Full administration with the admin command (Python 3.8+)**: `tools/kssw-admin` on your own computer | Python 3.8 or later on your computer | everything: search, bulk delete / restore, maintenance mode, backup, the admin log; it can be handed to an AI agent |
 
-### 準備（最初の 1 回）
+Python is usually already there on Linux, but **on Windows and macOS it usually has to be installed first** (python.org; on Windows also the Microsoft Store). If that is a hurdle, start with the admin page ("Minimal administration without Python" below).
 
-1. 合言葉（トークン）を作ります。どこにも送信されません。
+### Full administration with the admin command (Python 3.8+)
+
+Administration is done **from your own computer** with the zip's `tools/kssw-admin` (the admin command). Do not upload it to the server (that is why it sits outside `bbs/`). It runs with Python 3.8 or later without installing anything, and all its output is JSON, so the main way to use it is to **let an AI agent such as Claude operate it directly**.
+
+#### Setup (once)
+
+1. Create a secret token. It is not sent anywhere.
 
 	```sh
 	python3 tools/kssw-admin token new
@@ -224,181 +293,170 @@ PHP のファイル（`.php`）に実行権限（755）は要りません。
 
 	```json
 	{
-	  "token": "3iSmaIsekLlx73TkCofCNMVl55RywNuFKZp1Hmj_Ppo",
-	  "sha256": "c3ddb18a…",
-	  "config_line": "'admin_token_sha256' => 'c3ddb18a…',",
+	  "token": "<43 random characters: your token>",
+	  "sha256": "<64 hex characters>",
+	  "config_line": "'admin_token_sha256' => '<64 hex characters>',",
 	  "note": "…"
 	}
 	```
 
-	`token` は自分のパソコンに保管します（パスワードと同じ扱い。人に見せない）。
-2. `config_line` の 1 行を、サーバの `bbs/api/config.php` の `return [ … ];` の中に足して、FTP で送ります。`config.php` が無ければ `config.example.php` をコピーして作ります。
+	Keep `token` on your own computer (treat it like a password; do not show it to anyone).
+2. Add the `config_line` line inside `return [ … ];` in `bbs/api/config.php` on the server, and upload it by FTP. If there is no `config.php`, make one by copying `config.example.php`.
 
 	```php
 	<?php
 	return [
-	    'admin_token_sha256' => 'c3ddb18a…',
+	    'admin_token_sha256' => '<64 hex characters>',
 	];
 	```
 
-	サーバに置くのはトークンのハッシュ（SHA-256）だけです。トークンを取り替えるときは、新しく作って行を書き換えます。行を消せば管理 API は止まります（404 になります）。
-3. 掲示板を **`https://` で**使ってください。管理 API は `http://` では動きません（403 `https_required`）。管理コマンドも、`http://` の相手にはトークンを送りません。
-4. 確かめます。`https://あなたのドメイン/bbs/api/v1/meta` の `features` に `"admin"` が出て、次が答えれば準備完了です。
+	Only the token's hash (SHA-256) goes on the server. To replace the token, create a new one and change the line. Removing the line turns the admin API off (it returns 404).
+3. Use the board **over `https://`**. The admin API does not work over `http://` (403 `https_required`), and the admin command will not send the token to an `http://` address either.
+4. Check it. Setup is complete when `features` in `https://your-domain/bbs/api/v1/meta` includes `"admin"` and the following answers:
 
 	```sh
-	export KSSW_URL=https://あなたのドメイン/bbs/api
-	export KSSW_ADMIN_TOKEN=（1 で作ったトークン）
+	export KSSW_URL=https://your-domain/bbs/api
+	export KSSW_ADMIN_TOKEN=(the token from step 1)
 	python3 tools/kssw-admin capabilities
 	```
 
-Windows では `python3` の代わりに `py`、`export` の代わりに `set`（PowerShell では `$env:KSSW_URL = "…"`）を使います。
+On Windows, use `py` instead of `python3`, and `set` instead of `export` (in PowerShell, `$env:KSSW_URL = "…"`).
 
-同じ IP から 15 分に 10 回トークンを間違えると、その IP からはしばらく管理 API が使えなくなります（429）。
+After 10 wrong tokens from the same IP within 15 minutes, that IP cannot use the admin API for a while (429).
 
-### 使い方
+#### Usage
 
-| やること | コマンド |
+| Task | Command |
 |---|---|
-| 投稿を探す | `kssw-admin posts list --q 宣伝`（本文）、`--author 名前`（投稿者名が一致）、`--tag 雑談`、`--since 2026-10-01`、`--status deleted` |
-| 消したらどうなるか見るだけ | `kssw-admin posts delete --dry-run <id> <id> …` |
-| 削除する | `kssw-admin posts delete <id> …`（削除済みの表示になります。`posts restore <id>` で戻せます） |
-| 探したものをまとめて削除 | `kssw-admin posts list --author 荒らし \| kssw-admin posts delete --stdin` |
-| バックアップ | `kssw-admin backup kssw.sqlite3`（データベースの完全なコピー） |
-| メンテナンスモード | `kssw-admin maintenance on` / `off` / `get`（on の間は書き込みが止まり、閲覧はできます） |
-| 管理ログ | `kssw-admin log`（いつ、何を、どこから。管理画面での操作も載ります） |
-| 全コマンドの説明 | `kssw-admin commands`（JSON）、各コマンドに `--help` |
+| Find posts | `kssw-admin posts list --q spam` (post text), `--author name` (exact poster name), `--tag chat`, `--since 2026-10-01`, `--status deleted` |
+| Only see what deleting would do | `kssw-admin posts delete --dry-run <id> <id> …` |
+| Delete | `kssw-admin posts delete <id> …` (shown as deleted; undo with `posts restore <id>`) |
+| Delete everything a search found | `kssw-admin posts list --author troll \| kssw-admin posts delete --stdin` |
+| Backup | `kssw-admin backup kssw.sqlite3` (a complete copy of the database) |
+| Maintenance mode | `kssw-admin maintenance on` / `off` / `get` (while on, posting stops; reading still works) |
+| Admin log | `kssw-admin log` (when, what, and from where; actions on the admin page are included) |
+| Description of every command | `kssw-admin commands` (JSON), and `--help` on each command |
 
-`kssw-admin` は `python3 tools/kssw-admin` の略です。古い暗号方式しか使えない https のサーバ（XREA の共有 SSL など）では接続に失敗します。そのときは `--tls-compat`（または環境変数 `KSSW_TLS_COMPAT=1`）を付けてください。証明書の確認は続けたまま、古い方式も使えるようにします。結果は 1 つの JSON で出ます（人が見るなら `--format table`）。失敗すると、標準エラーに `{"error": {"code": …, "message": …, "status": …}}` が出て、終了コードは 1（使い方の誤り）、2（認証：トークン違い・https でない）、3（見つからない）、4（状態の衝突：メンテナンス中など）、5（サーバ・通信のエラー）です。
+`kssw-admin` is short for `python3 tools/kssw-admin`. On https servers that only offer old ciphers (such as XREA's shared SSL), connecting fails. In that case add `--tls-compat` (or set the environment variable `KSSW_TLS_COMPAT=1`): it also allows the old ciphers while still verifying the certificate. The result is one JSON value (for people, use `--format table`). On failure, `{"error": {"code": …, "message": …, "status": …}}` goes to standard error, and the exit code is 1 (usage error), 2 (authentication: wrong token, or not https), 3 (not found), 4 (state conflict, e.g. in maintenance) or 5 (server or network error).
 
-### AI エージェントに任せる
+#### Handing it to an AI agent
 
-エージェント（Claude Code など）に `tools/kssw-admin` を使える環境を用意し、`KSSW_URL` と `KSSW_ADMIN_TOKEN` を環境変数に設定してから、指示に次のように書きます。
+Give the agent (Claude Code or similar) an environment where it can run `tools/kssw-admin`, set `KSSW_URL` and `KSSW_ADMIN_TOKEN` as environment variables, and write something like this in its instructions:
 
 ```
-掲示板は kssw-admin（tools/kssw-admin）で管理する。KSSW_URL と
-KSSW_ADMIN_TOKEN は環境変数に設定済み。トークンは表示・記録せず、
-コマンドラインにも書かない。
-- 最初に `kssw-admin commands` で、コマンド・引数・出力を確かめる。
-- 出力は標準出力に JSON 1 つ。失敗時は標準エラーに {"error": …}。
-  終了コード 0 成功、1 使い方、2 認証、3 見つからない、4 衝突・メンテナンス、
-  5 サーバ・通信。
-- 投稿は `kssw-admin posts list`（--q, --author, --tag, --status, --since,
-  --until, --root, --all）で探す。
-- 変更の前に必ず --dry-run で "results" を確かめ、それから --dry-run なしで
-  実行する。削除は `posts restore` で戻せる。
-- まとめて変更する前に `kssw-admin backup <ファイル>` を取る。
-- 頼まれない限りメンテナンスモードを切り替えない。
-- 何をしたかは `kssw-admin log` で確かめられる。
+The board is managed with kssw-admin (tools/kssw-admin). KSSW_URL and
+KSSW_ADMIN_TOKEN are already set as environment variables. Never print
+or record the token, and never put it on a command line.
+- First run `kssw-admin commands` to learn the commands, arguments and output.
+- Output is one JSON value on standard output. On failure, {"error": …}
+  on standard error. Exit codes: 0 success, 1 usage, 2 authentication,
+  3 not found, 4 conflict / maintenance, 5 server / network.
+- Find posts with `kssw-admin posts list` (--q, --author, --tag, --status,
+  --since, --until, --root, --all).
+- Before any change, always run it with --dry-run and check "results",
+  then run it without --dry-run. Deletions can be undone with `posts restore`.
+- Before changing many posts at once, take `kssw-admin backup <file>`.
+- Do not switch maintenance mode unless asked.
+- `kssw-admin log` shows what was done.
 ```
 
-コマンドの詳しい説明（全コマンドの出力例）は ks-sw-api の README の "Administration (for AI agents)" にあります。
+Full details of the commands (with sample output for each) are in the ks-sw-api README, "Administration (for AI agents)".
 
-### 管理画面（予備）
+### Minimal administration without Python (admin page)
 
-`https://あなたのドメイン/bbs/api/admin.php`。パスワードでログインし、新しい順に 50 件ずつ投稿を見て、削除・復元するだけの画面です（検索・メンテナンス・バックアップ・ログは管理コマンドで）。
+`https://your-domain/bbs/api/admin.php`. A page where you log in with a password, see posts 50 at a time, newest first, and delete or restore them; nothing else (search, maintenance, backup and the log are done with the admin command).
 
-使うには、パスワードのハッシュを `config.php` に書きます。PHP のあるパソコンで
+Setting the password (once, in the browser):
 
-```sh
-php -r 'echo password_hash("あなたのパスワード", PASSWORD_DEFAULT), "\n";'
-```
+1. Open `https://your-domain/bbs/api/admin.php`. While no password is set up it shows a setup form. (It works only over `https://`.)
+2. Type a password (at least 12 characters) twice and press the button. The page shows one line, like `'admin_password_hash' => '$2y$10$…',`, and the steps below. Nothing is saved on the server yet: the page only computes the line (the password itself is not in it, only its hash).
+3. With your FTP program, open `bbs/api/`. If it has no `config.php`, download `config.example.php` and keep the copy under the name `config.php`.
+4. Open `config.php` in a text editor, find the line `'admin_password_hash' => '',` and replace that whole line with the line from step 2. Save it as UTF-8 and upload it to `bbs/api/`.
+5. Reload `admin.php`: the login form appears. Log in with the password from step 2.
 
-を実行し、出てきた `$2y$10$…` を `'admin_password_hash' => '$2y$10$…',` として `config.php` に足します（`$` を含むので必ずシングルクォート `'` で囲みます）。ハッシュが無い間、管理画面は 403 で閉じています。5 回続けて間違えると 15 分ロックされます。`https://` で使ってください。
+To change the password later, set the value back to `''` in `config.php` and start again from step 1. Five wrong passwords in a row lock the login for 15 minutes; the setup form takes at most 10 tries per 15 minutes.
 
-## 広告が必須のサーバ（XREA Free など）
+On a computer with PHP you can make the line yourself instead: `php -r 'echo password_hash("your password", PASSWORD_DEFAULT), "\n";'` gives the `$2y$10$…` part (wrap it in single quotes `'`, as it contains `$`).
 
-XREA Free のように、無料の代わりに広告が自動で入るサーバでも動きます。
+## Hosts with mandatory ads (XREA Free and similar)
 
-- 広告は HTML（`index.html`）に自動で挿入され、掲示板の画面の上に表示されます。掲示板の画面は広告を覆ったり消したりしません。
-- **広告を非表示にしないでください。** XREA の利用規約では、Free プランで広告を非表示にするなど広告の効果が出ないようにする行為は禁止です（第 14 条 1 項 23 号）。CSS やブラウザの拡張で消す改造もしないでください。
-- API（`api/` の下）は JSON を返します。画面ではないので、広告の対象になりません。万一 API の応答に広告が入ると掲示板が動かなくなります。その場合は Issues で知らせてください。
-- XREA では、ドメインの**トップに index のページが必要**です（トップページを置かない運用は規約で禁止、同 24 号）。掲示板を `bbs/` などのフォルダに置く場合は、ドメイン直下にも `index.html` を置いてください。掲示板そのものをドメイン直下に置けば、それがトップになります。
-- **PHP のバージョンを変えてください。** XREA の Web の PHP は既定が 7.0 で、そのままでは動きません（上の「必要なもの」）。管理画面の「サイト設定」から 7.4 以上（8.x 推奨）にします。
-- **https について。** 無料 SSL を使えるのは、独自ドメインを「サブ」として設定したときです。初期ドメイン（`アカウント名.サーバー名.xrea.com`）には設定できません。
-	- 独自ドメインが無ければ、共有 SSL（`https://ss1.xrea.com/アカウント名.サーバー名.xrea.com/…`）で https にできます。設定は要りません。掲示板はフォルダの下でも動くので、そのまま使えます。
-	- ただし共有 SSL は、**XREA の全利用者が同じアドレス（`ss1.xrea.com`）を共有**します。ブラウザは他の人のページと区別しないため、他の人のページから、閲覧者のブラウザに保存された掲示板の情報（投稿の削除に使う ID など）が読める可能性があります。お試しには使えますが、本格的に使うなら独自ドメインで無料 SSL にしてください。共有 SSL では管理画面（`admin.php`）を使わず、管理はコマンド（`kssw-admin --tls-compat`）で行ってください。
-	- `http://` でも動きます。
+The board also works on hosts like XREA Free, which insert ads automatically in exchange for free hosting.
 
-ほかのサーバでも、規約は各自で確かめてください。掲示板に書かれた内容の責任は、設置した人が負うのが普通です。
+- The ads are inserted into the HTML (`index.html`) automatically and appear above the board. The board does not cover or remove them.
+- **Do not hide the ads.** XREA's terms of service forbid, on the Free plan, hiding the ads or otherwise preventing them from having effect (Article 14, paragraph 1, item 23). Do not modify the board to remove them with CSS or a browser extension either.
+- The API (under `api/`) returns JSON. It is not a page, so it is not subject to the ads. If ads ever get into the API's responses, the board stops working; please report it in Issues.
+- XREA requires **an index page at the top of the domain** (running without a top page is forbidden by the terms, same article, item 24). If you put the board in a folder such as `bbs/`, also put an `index.html` at the domain root. If you put the board itself at the domain root, it is the top page.
+- **Change the PHP version.** XREA's web PHP defaults to 7.0, and the board does not run on it ("Requirements" above). Set it to 7.4 or later (8.x recommended) under "Site settings" (サイト設定) in the control panel.
+- **About https.** Free SSL is available only when you set up your own domain as a "sub" domain. It cannot be set up on the initial domain (`account.server.xrea.com`).
+	- Without your own domain, you can use shared SSL (`https://ss1.xrea.com/account.server.xrea.com/…`) for https. No setup is needed. The board works under a folder, so it works there as is.
+	- But with shared SSL, **every XREA user shares the same address (`ss1.xrea.com`)**. Browsers do not tell their pages apart from other people's, so other people's pages may be able to read board data stored in the viewer's browser (such as the ID used to delete one's own posts). It is fine for trying things out, but for real use, use your own domain with free SSL. On shared SSL, do not use the admin page (`admin.php`); administer with the command (`kssw-admin --tls-compat`).
+	- `http://` also works.
 
-## できないこと（この版）
+On other hosts, check the terms yourself. Whoever installs a board is normally responsible for what is posted on it.
 
-- NG ワード・アクセス拒否（IP・投稿者の禁止）はありません。管理者ができるのは、投稿の削除・復元、メンテナンスモード、バックアップです（上の「管理」）
-- JavaScript が動かないブラウザでは表示されません
-- 旧くずはの過去ログの読み込み・書き出しはありません
-- 掲示板の名前・色などは `config.json` で変えられます（上記）。画面そのものを変えるには ks-kuzuha-ui を自分で build します（下記）
+## What this release cannot do
 
-## ソースと build
+- No banned-word filter or access blocking (no banning of IPs or posters). The administrator can delete and restore posts, use maintenance mode, and make backups ("Administration" above)
+- It does not display in browsers without JavaScript
+- No import or export of old kuzuha past logs
+- The board name, colours and so on can be changed in `config.json` (above). To change the UI itself, build ks-kuzuha-ui yourself (below)
 
-| 部品 | リポジトリ | この版（0.1.0-alpha.1）に入っているもの |
+## Source and build
+
+| Component | Repository | Version in this release (0.1.0-alpha.1) |
 |---|---|---|
-| 画面 | [kimari-s/ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui) | 0.5.0-alpha.1 |
+| UI | [kimari-s/ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui) | 0.5.0-alpha.1 |
 | API | [kimari-s/ks-sw-api](https://github.com/kimari-s/ks-sw-api) | 0.2.0-alpha.1 |
-| 仕様（kssw） | [kimari-s/ks-sw-spec](https://github.com/kimari-s/ks-sw-spec) | 0.1.0-alpha.1（kssw 1、Draft） |
-| 配布物（このリポジトリ） | [kimari-s/ks-kuzuha-alternative](https://github.com/kimari-s/ks-kuzuha-alternative) | 0.1.0-alpha.1 |
+| Specification (kssw) | [kimari-s/ks-sw-spec](https://github.com/kimari-s/ks-sw-spec) | 0.1.0-alpha.1 (kssw 1, Draft) |
+| Bundle (this repository) | [kimari-s/ks-kuzuha-alternative](https://github.com/kimari-s/ks-kuzuha-alternative) | 0.1.0-alpha.1 |
 
-各部品の版（commit）は [`dist/php-min.toml`](dist/php-min.toml) に固定してあります。zip は次で作れます（Python 3.11 以上、git、Node.js 22 以上、npm）。
+The version (commit) of each component is pinned in [`dist/php-min.toml`](dist/php-min.toml). Build the zip with the following (Python 3.11+, git, Node.js 22+, npm):
 
 ```sh
-make dist      # build/ks-kuzuha-alternative-<版>.zip と .sha256
-make smoke     # zip を docker の php:7.4-apache に展開し、/v1/meta が kssw 1 であること、
-               # well-known/ を /.well-known/ に置いたときの /.well-known/kssw、
-               # ブラウザ（Playwright）で表示・投稿・一覧、
-               # config.json の書き換えの反映、http（localhost 以外の名前）での表示を確認。
-               # 続けて tools/kssw-admin で capabilities と posts delete --dry-run（トークンは config.php に入れて）
-make smoke-full  # 上に加えて返信・削除・検索・タグ・設定画面
+make dist      # build/ks-kuzuha-alternative-<version>.zip and .sha256
+make smoke     # extracts the zip into docker php:7.4-apache and checks: /v1/meta is kssw 1;
+               # /.well-known/kssw with well-known/ placed at /.well-known/;
+               # in a browser (Playwright), display, posting and listing;
+               # the About page (link row, about.html with /v1/meta, Japanese and English);
+               # the zip has config.example.json and no config.json; no config.json, a copied,
+               # an edited, a mistyped and a broken one (settings page notice); the settings page's
+               # security warning with api/.htaccess's deny rules removed, none with them;
+               # the admin.php password setup form; display over http (a name other than localhost).
+               # Then runs tools/kssw-admin: capabilities and posts delete --dry-run (token put in config.php)
+make smoke-full  # the above, plus reply, delete, search, tags, the settings page,
+                 # language, the header (View menu, current item) and Back links
 ```
 
-同じ入力からは同じ zip（同じ SHA-256）ができます。設定は 2 つです（項目は ks-kuzuha-ui の README の "Instance config"）。
+The same inputs always produce the same zip (same SHA-256). There are two kinds of configuration (keys: ks-kuzuha-ui README, "Instance config"):
 
-| ファイル | いつ効くか | 中身 |
+| File | When it applies | Contents |
 |---|---|---|
-| [`config/bundle.json`](config/bundle.json) | 画面の build 時 | どの設置先でも同じもの（API の場所 `./api`、保存キーの接頭辞など）。全部の zip で同じ build を使います |
-| [`config/site.json`](config/site.json) | 表示のたび（`bbs/config.json` として zip に入る） | 掲示板の名前・色・タグなど。build 時に `release`（`dist/php-min.toml` の名前・版・URL）を書き足します |
-| [`config/demo.json`](config/demo.json) | 同上（デモサイト用。`make demo` / `make deploy-demo`） | site.json と同じで、名前だけ違う |
+| [`config/bundle.json`](config/bundle.json) | When the UI is built | Things that are the same for every installation (API location `./api`, storage key prefix, etc.). Every zip uses the same build |
+| [`config/site.json`](config/site.json) | Built in (merged over bundle.json, with `release`: name, version and URL from `dist/php-min.toml`), and shipped as `bbs/config.example.json` | The default board name, colours, tags, etc. The operator copies the example to `config.json` to change them |
+| [`config/demo.json`](config/demo.json) | On every page load, for the demo site only (`make demo` / `make deploy-demo`: shipped as `bbs/config.json` in the demo zip) | Same as site.json, except the name |
 
-自分の `config.json` 入りの zip を作るには：
+The release name shown in the UI footer is the bare product name with its version, e.g. `ks-kuzuha-alternative v0.1.0-alpha.1`, linking to this repository (`[bundle.release]` in `dist/php-min.toml`).
+
+The plain zip has no `bbs/config.json`, so uploading a release over an installation never replaces the operator's. To build a zip that also ships your own `config.json` (as the demo does):
 
 ```sh
 python3 dist/build.py --site-config my.json --suffix mine
 ```
 
-`make deploy-demo` は、`make demo` で作った `bbs/` を自分のサーバへ送る例です。送り先は gitignore の `make.local` に書きます（`DEPLOY_HOST` / `DEPLOY_PATH`。書き方は `Makefile` の冒頭）。サーバの `api/config.php` と `api/data/` は送らず、`config.json` もサーバに無いときだけ送ります。
+`make deploy-demo` is an example of sending the `bbs/` built by `make demo` to your own server. The destination goes in `make.local` (gitignored; `DEPLOY_HOST` / `DEPLOY_PATH`; see the top of the `Makefile`). It never sends the server's `api/config.php` and `api/data/`, and sends `config.json` only when the server has none.
 
-## 脆弱性の報告
+## Reporting vulnerabilities
 
-[SECURITY.md](SECURITY.md) を見てください。
+See [SECURITY.md](SECURITY.md).
 
-## ライセンス
+## Licenses
 
-| 対象 | ライセンス |
+| Component | License |
 |---|---|
-| ks-kuzuha-alternative（このリポジトリ） | MIT（[LICENSE](LICENSE)） |
+| ks-kuzuha-alternative (this repository) | MIT ([LICENSE](LICENSE)) |
 | ks-kuzuha-ui | MIT |
 | ks-sw-api | MIT |
-| UDEV Gothic（`bbs/fonts/*.ttf`、© Yuko OTAWARA） | SIL Open Font License 1.1 |
+| UDEV Gothic (`bbs/fonts/*.ttf`, © Yuko OTAWARA) | SIL Open Font License 1.1 |
+| Icon: "auto_awesome" from Material Symbols (`bbs/favicon.svg` etc., © Google) | Apache License 2.0 |
 
-zip の `LICENSES/` に全文があります。フォントのライセンスは `bbs/fonts/LICENSE-UDEVGothic.txt` にも同じものを置いています。同梱の UDEV Gothic は改変していない原本です。別のフォントにするには「フォントを変える」を見てください。
-
----
-
-## English
-
-ks-kuzuha-alternative bundles [ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui) (a static SPA for a kuzuha-style BBS) and [ks-sw-api](https://github.com/kimari-s/ks-sw-api) (PHP 7.4+, SQLite; derived from the [6umi.net](https://6umi.net) API) into one zip that you upload by FTP to ordinary shared hosting. The UI and the API speak **kssw**, specified in [ks-sw-spec](https://github.com/kimari-s/ks-sw-spec); ks-sw-api is its PHP reference implementation. It is not the official KuzuhaScript and is not compatible with its CGI, settings or logs.
-
-Demo: <https://demo.newsupers.net/kuzuha-alternative/?lang=en>
-
-This release (0.1.0-alpha.1) contains ks-kuzuha-ui 0.5.0-alpha.1 and ks-sw-api 0.2.0-alpha.1 (kssw protocol 1, Draft; ks-sw-spec 0.1.0-alpha.1).
-
-- **Requirements**: PHP 7.4+ with pdo_sqlite; Apache with `.htaccess` and mod_rewrite. HTTPS recommended (plain `http://` works, unencrypted).
-- **Install**: upload the zip's `bbs/` folder (any name, any depth), including `api/.htaccess`. Check `https://<host>/bbs/api/v1/meta` (`{"protocol":"kssw","version":"1","profile":"min",…}`), then open `https://<host>/bbs/`. The SQLite file is created on first use in `bbs/api/data/`; move it outside the document root with `db_path` in `api/config.php` (copy of `config.example.php`).
-- **Administration**: `tools/kssw-admin` (outside `bbs/`; Python 3.8+, stdlib only, JSON output, made for AI agents) drives the admin API of ks-sw-api: posts list / delete / restore (with `--dry-run`), maintenance mode, backup, admin log. Setup: `kssw-admin token new`, put its `config_line` (the token's SHA-256) into `bbs/api/config.php`, serve over HTTPS, set `KSSW_URL` / `KSSW_ADMIN_TOKEN`. `bbs/api/admin.php` is a minimal password-protected fallback page (recent posts, delete / undelete). Details: ks-sw-api README, "Administration (for AI agents)".
-- **Discovery (optional)**: kssw clients can find the API from `https://<host>/.well-known/kssw`. If you can write to the document root, upload the zip's `well-known/kssw` and `well-known/.htaccess` to `<document root>/.well-known/` (append to an existing `.htaccess` there) and set `base` to your API's URL path if `bbs/` is not at the root. Or rewrite to the API instead: ks-sw-api `php/well-known/README.md`. The board works without it.
-- **Board name, colours, tags**: edit `bbs/config.json` and upload it; read on every page load, no rebuild (keys: ks-kuzuha-ui README "Instance config"). The title is `network＠<mainTags joined with +>` (`network` alone when `mainTags` is empty); the board's name is its tag, so posts carry it (`defaultTags`) and the listing shows the posts tagged with it. Renaming the tag hides older posts unless the old tag stays in `mainTags`. `theme.controls`: `standard` (browser-look inputs, default) or `custom` (inputs and text selection in theme colours); viewers can switch it on the settings page. Broken JSON falls back to the build-time defaults.
-- **Language**: `locale` in `bbs/config.json` (`ja` as shipped) is the fallback. A viewer whose browser prefers English gets English (`"localeAuto": false` turns that off), and a link with `?lang=en` or `?lang=ja` picks the language and keeps it as the viewer's choice (ks-kuzuha-ui README "Language").
-- **Font**: the default is the bundled, unmodified UDEV Gothic (SIL OFL 1.1). To use another font, add `font` to `bbs/config.json`, e.g. `{"font": {"family": "\"My Font\", monospace", "faces": [{"family": "My Font", "src": "fonts/MyFont.woff2", "format": "woff2"}]}}` with the file uploaded to `bbs/fonts/` (keys: ks-kuzuha-ui README "Fonts"). Pick a font whose full-width glyphs are two half-widths wide, or the tree view's lines will not align.
-- **Upgrade**: delete `bbs/config.json` from the new release (to keep yours), then upload the new `bbs/` over the old one. `api/config.php` and `api/data/` are not in the zip; do not use an FTP "mirror/sync with delete".
-- **Hosts with mandatory ads** (XREA Free): ads are injected into the HTML and must not be hidden (XREA terms art. 14(1)(23)); the API answers JSON; a top-level index page is required.
-- **Build**: `make dist` (Python 3.11+, git, Node 22+) builds the zip from the commits pinned in `dist/php-min.toml` (one neutral UI build, `config/bundle.json`; the runtime `bbs/config.json` from `config/site.json` plus `release`); `make smoke` tests it in `php:7.4-apache` with Playwright, including a `config.json` edit and a plain-http non-localhost origin, then runs the shipped `tools/kssw-admin` against it; it also checks that `/v1/meta` is kssw 1 and that `/.well-known/kssw`, placed from `well-known/`, leads to the API.
-- **Security**: see [SECURITY.md](SECURITY.md).
-- **Licenses**: MIT (this repo, ks-kuzuha-ui, ks-sw-api); UDEV Gothic fonts (bundled unmodified) under SIL OFL 1.1.
+The full texts are in the zip's `LICENSES/`. The font licence is also at `bbs/fonts/LICENSE-UDEVGothic.txt`, the icon's at `bbs/LICENSE-MaterialSymbols.txt`. The bundled UDEV Gothic is the unmodified original. To use another font, see "Changing the font".
