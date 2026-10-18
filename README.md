@@ -32,7 +32,7 @@ Check whether PHP has `pdo_sqlite` in your host's control panel or with `phpinfo
 ## What is in the zip
 
 ```
-ks-kuzuha-alternative-0.1.0-alpha.1/
+ks-kuzuha-alternative-0.2.0-alpha.1/
 ├── README.txt             short instructions
 ├── LICENSES/              licences of each component
 ├── tools/                 admin command (use it on your own computer; do not put it on the server)
@@ -119,6 +119,8 @@ The part of the title after `＠` is the board's tag (`boardTags`). Posts get th
 | `boardTags` / `postTags` / `excludeTags` | The board's tags (the part of the title after `＠`; posts get them and the listing shows their posts) / tags added to posts when they differ from `boardTags` / tags whose posts are hidden from the listing (e.g. `["Chat"]`) |
 | `localTags` / `scope` | Tags whose posts make up the Local listing (default: `boardTags`; e.g. add the tags bots post under without putting them in the title) / the listing a viewer starts with: `local` or `global` (every post). Viewers can switch on the settings page |
 | `tagsMode` / `showTags` | How tags are shown (`full`, `nofilter`, `minimal`) / the initial state of "Show tags" |
+| `memo` | A line or two at the top of the listing, in a frame titled Memo (メモ), by tag: `{"<tag>": "<text>"}`. The board's own listing takes its first board tag (e.g. `"memo": { "My board": "Be nice" }`); a listing narrowed to one tag takes that tag |
+| `about` | Your own text on the About page (広報室), in place of its first line, by language: `{"ja": "…", "en": "…"}`. Plain text; line breaks kept; URLs and `[text](https://…)` become links |
 | `links` | Links shown under the header and under the post form. `links.related` is the row under the post form ("About page and custom pages" below) |
 | `release` | The version shown at the very bottom of the page. Built in; do not set it (a `config.json` copied from release 0.1.0-alpha.1 has it: delete that entry, or the old version keeps showing) |
 | `font` | The UI font ("Changing the font" below). Without it, the bundled UDEV Gothic |
@@ -403,12 +405,12 @@ On other hosts, check the terms yourself. Whoever installs a board is normally r
 
 ## Source and build
 
-| Component | Repository | Version in this release (0.1.0-alpha.1) |
+| Component | Repository | Version in this release (0.2.0-alpha.1) |
 |---|---|---|
-| UI | [kimari-s/ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui) | 0.5.0-alpha.1 |
+| UI | [kimari-s/ks-kuzuha-ui](https://github.com/kimari-s/ks-kuzuha-ui) | 0.6.0-alpha.1 |
 | API | [kimari-s/ks-sw-api](https://github.com/kimari-s/ks-sw-api) | 0.2.0-alpha.1 |
 | Specification (kssw) | [kimari-s/ks-sw-spec](https://github.com/kimari-s/ks-sw-spec) | 0.1.0-alpha.1 (kssw 1, Draft) |
-| Bundle (this repository) | [kimari-s/ks-kuzuha-alternative](https://github.com/kimari-s/ks-kuzuha-alternative) | 0.1.0-alpha.1 |
+| Bundle (this repository) | [kimari-s/ks-kuzuha-alternative](https://github.com/kimari-s/ks-kuzuha-alternative) | 0.2.0-alpha.1 |
 
 The version (commit) of each component is pinned in [`dist/php-min.toml`](dist/php-min.toml). Build the zip with the following (Python 3.11+, git, Node.js 22+, npm):
 
@@ -435,7 +437,7 @@ The same inputs always produce the same zip (same SHA-256). There are two kinds 
 | [`config/site.json`](config/site.json) | Built in (merged over bundle.json, with `release`: name, version and URL from `dist/php-min.toml`), and shipped as `bbs/config.example.json` | The default board name, colours, tags, etc. The operator copies the example to `config.json` to change them |
 | [`config/demo.json`](config/demo.json) | On every page load, for the demo site only (`make demo` / `make deploy-demo`: shipped as `bbs/config.json` in the demo zip) | Same as site.json, except the name |
 
-The release name shown in the UI footer is the bare product name with its version, e.g. `ks-kuzuha-alternative v0.1.0-alpha.1`, linking to this repository (`[bundle.release]` in `dist/php-min.toml`).
+The release name shown in the UI footer is the bare product name with its version, e.g. `ks-kuzuha-alternative v0.2.0-alpha.1`, linking to this repository (`[bundle.release]` in `dist/php-min.toml`).
 
 The plain zip has no `bbs/config.json`, so uploading a release over an installation never replaces the operator's. To build a zip that also ships your own `config.json` (as the demo does):
 
