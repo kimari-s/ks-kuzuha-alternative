@@ -1,7 +1,7 @@
 """Smoke test of a built zip: extract it, serve bbs/ with Apache + PHP 7.4
 in docker (tests/smoke/Dockerfile), and run check.py against it.
 
-    python tests/smoke/run.py build/ks-kuzuha-alternative-0.1.0-alpha.1.zip [--full]
+    python tests/smoke/run.py build/ks-kuzuha-alternative-0.2.0-alpha.1.zip [--full]
 
 The zip's .sha256 next to it is verified first. The site is served at
 http://localhost:<port>/bbs/ (a secure context, like HTTPS); check.py also

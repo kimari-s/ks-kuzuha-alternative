@@ -9,7 +9,7 @@
 
 [bundle]
 name = "ks-kuzuha-alternative"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 # Top folder inside the zip. {name} and {version} are substituted.
 top = "{name}-{version}"
 
@@ -26,7 +26,7 @@ commit = "fbb57cd28a193b76ade7e7e8239cbc056bc16c38"  # v0.2.0-alpha.1 + cooldown
 
 [components.ks-kuzuha-ui]
 url = "https://github.com/kimari-s/ks-kuzuha-ui.git"
-commit = "5bea480082ce00e8ffedb17e9f55fb27fb2cb573"  # v0.5.0-alpha.1 + about.html links, settings-page security self-check, header View menu, boardTags / postTags, listing scope Local / Global, new icon
+commit = "43ca1d80189c480bb6bead391ab4e9724ad501fb"  # v0.6.0-alpha.1
 
 # The UI build: run in the ks-kuzuha-ui checkout. `config` is a path in this
 # repo (apiBaseUrl "./api": same origin, no CORS); `defaults` (board name,

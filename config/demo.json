@@ -1,9 +1,10 @@
 {
-  "$comment": "Board settings of the demo site (make deploy-demo): the same as config/site.json except the name. The title is network＠boardTags.",
+  "$comment": "Board settings of the demo site (make deploy-demo): the same as config/site.json except the name and the memo. The title is network＠boardTags.",
   "network": "",
   "locale": "ja",
   "theme": { "hue": 195, "accentHue": 15.59, "accentStrength": 0, "controls": "standard" },
-  "boardTags": ["くずはAlternative"],
+  "boardTags": ["くずはｵﾙﾀﾅﾃｨﾌﾞ"],
+  "memo": { "くずはｵﾙﾀﾅﾃｨﾌﾞ": "これはデモです\n投稿は予告なく消すことがあります" },
   "excludeTags": [],
   "tagsMode": "full",
   "showTags": true,
